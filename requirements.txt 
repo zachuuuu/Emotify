@@ -15,3 +15,7 @@ matplotlib
 seaborn
 jupyterlab
 soundfile
+nnAudio
+pyarrow
+tqdm
+filelock

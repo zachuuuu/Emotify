@@ -8,10 +8,9 @@
   - [Advanced Annotation](#advanced-annotation--augmentation-mert)
 
 ## Team Members
-
 * **Myroslav Natalchenko**
 * **Kiryl Sankouski**
-* **Michał Zach**
+* Michał Zach
 
 ## Development Workflow on GitHub
 
@@ -21,9 +20,7 @@ To ensure code stability and minimize merge conflicts, we will strictly follow a
 2.  Create a specific branch in your fork for your tasks
 3.  Once task is complete, open a Pull Request (PR) from your fork's branch to the upstream repository's `main` branch
 
-
 ## Data Strategy & Model Training
-
 To achieve robust emotional analysis in music, **Emotify** will utilize a two-staged approach regarding data ingestion and feature extraction.
 
 ### Baseline Training (DEAM Dataset)

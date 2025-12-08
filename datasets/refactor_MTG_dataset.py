@@ -2,9 +2,9 @@ import pandas as pd
 import os
 from sklearn.preprocessing import MultiLabelBinarizer
 
-INPUT_FILE = '../datasets/MTG/autotagging_moodtheme.tsv'
-OUTPUT_FILE = '../datasets/MTG/dataset_metadata.csv'
-BASE_PATH = '/Volumes/T7 Shield/Emotify/MTG_dataset/melspecs/'
+INPUT_FILE = 'MTG/autotagging_moodtheme.tsv'
+OUTPUT_FILE = 'MTG/moodtheme_low_npy.csv'
+BASE_PATH = '/Volumes/T7 Shield/Emotify/MTG_dataset/melspecs_29_1/'
 
 MOOD_THEMES = sorted([
     "love", "happy", "energetic", "dark", "relaxing", "melodic", "sad", "dream",

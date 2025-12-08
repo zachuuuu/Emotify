@@ -7,6 +7,9 @@
 # DS_Store
 .DS_Store
 
+# folder_for_tests_if_everything_works_fine
+audio_test/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

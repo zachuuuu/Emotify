@@ -1,6 +1,7 @@
 import sys
 import torch
 import pandas as pd
+import numpy as np
 import os
 
 sys.path.append('../performing_data')
@@ -10,12 +11,11 @@ try:
     from melspectograms import load_audio, melspectrogram
     from model import AudioCNN
 except ImportError as e:
-    print("Error: Run this script from the 'model_usage' directory.")
+    print("Error imports. Run from 'model_usage' directory.")
     sys.exit(1)
 
-MODEL_PATH = '../model/trained_best_model/best_mood_model.pth'
-CSV_PATH = '../datasets/MTG/dataset_metadata.csv'
-
+MODEL_PATH = '../model/trained_model/audio_rec_model.pth'
+CSV_PATH = '../datasets/MTG/moodtheme_low_npy.csv'
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 TARGET_FRAMES = 1366
 
@@ -31,11 +31,11 @@ def predict_mp3(mp3_path):
         print(f"CSV not found: {CSV_PATH}")
         return
 
-    model = AudioCNN(len(classes)).to(DEVICE)
+    # Загрузка модели
+    model = AudioCNN(num_classes=len(classes)).to(DEVICE)
 
     if not os.path.exists(MODEL_PATH):
         print(f"Weights not found: {MODEL_PATH}")
-        print("Run train_model.py first!")
         return
 
     model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
@@ -43,30 +43,40 @@ def predict_mp3(mp3_path):
 
     print(f"Analyzing: {mp3_path}")
     try:
+        # Обработка аудио
         audio = load_audio(mp3_path, segment_duration=29.1)
         spec = melspectrogram(audio)
 
-        inp = torch.from_numpy(spec).float().unsqueeze(0).unsqueeze(0).to(DEVICE)
+        # Паддинг/Обрезка до 1366 (безопасность)
+        if spec.shape[1] > TARGET_FRAMES:
+            spec = spec[:, :TARGET_FRAMES]
+        elif spec.shape[1] < TARGET_FRAMES:
+            pad = TARGET_FRAMES - spec.shape[1]
+            spec = np.pad(spec, ((0, 0), (0, pad)), mode='constant')
+
+        # ВАЖНО: Делаем только (Batch, Freq, Time) -> (1, 96, 1366)
+        inp = torch.from_numpy(spec).float().unsqueeze(0).to(DEVICE)
 
         with torch.no_grad():
-            probs = torch.sigmoid(model(inp)).cpu().numpy()[0]
+            # Модель вернет логиты, применяем сигмоиду здесь
+            logits = model(inp)
+            probs = torch.sigmoid(logits).cpu().numpy()[0]
 
         results = sorted(zip(classes, probs), key=lambda x: x[1], reverse=True)
 
         print("\n--- Results ---")
         found = False
         for tag, prob in results:
-            if prob > 0.1:
+            if prob > 0.15: # Чуть поднял порог
                 print(f"{tag}: {prob * 100:.1f}%")
                 found = True
             elif found and prob < 0.1:
                 break
         if not found:
-            print("No clear moods found (all < 10%)")
+            print("No clear moods found.")
 
     except Exception as e:
         print(f"Processing error: {e}")
-
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

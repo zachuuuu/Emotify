@@ -7,8 +7,8 @@
 # DS_Store
 .DS_Store
 
-# __init__.py
-__init__.py
+# folder_for_tests_if_everything_works_fine
+audio_test/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

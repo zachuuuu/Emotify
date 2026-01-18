@@ -7,13 +7,13 @@ from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyOAuth
-from model_usage.predict import EmotionPredictor
+from model.mert_model.predict_audio import AudioPredictor
 
 load_dotenv()
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
+CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000"], supports_credentials=True)
 
 limiter = Limiter(
     get_remote_address,
@@ -23,13 +23,12 @@ limiter = Limiter(
 )
 
 UPLOAD_FOLDER = 'uploads'
-MODEL_PATH = 'model/trained_model/audio_rec_model.pth'
 ALLOWED_EXTENSIONS = {'mp3', 'wav', 'ogg'}
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-predictor = EmotionPredictor(MODEL_PATH)
+predictor = AudioPredictor()
 
 sp_oauth = SpotifyOAuth(
     client_id=os.getenv('SPOTIFY_CLIENT_ID'),
@@ -45,7 +44,7 @@ def allowed_file(filename):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "ok", "model_loaded": predictor.model is not None})
+    return jsonify({"status": "ok", "model_loaded": predictor.classifier is not None})
 
 
 @app.route('/api/auth/login')
@@ -90,6 +89,7 @@ def analyze_upload():
     try:
         file.save(filepath)
         emotions = predictor.predict(filepath)
+
         return jsonify({"emotions": emotions})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

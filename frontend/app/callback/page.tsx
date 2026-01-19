@@ -15,10 +15,14 @@ export default function CallbackPage() {
       exchangeToken(code)
         .then((tokenInfo) => {
           localStorage.setItem('spotify_token', tokenInfo.access_token);
-          router.push('/spotify');
+
+          const redirectPath = localStorage.getItem('auth_redirect') || '/account';
+          localStorage.removeItem('auth_redirect');
+
+          router.push(redirectPath);
         })
         .catch((err) => {
-          console.error('Błąd wymiany tokena:', err);
+          console.error('Error in token exchange:', err);
           router.push('/account?error=auth_failed');
         });
     }

@@ -20,7 +20,7 @@ export function EmotionChart({ data }: EmotionChartProps) {
   const colors = ['#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#3b82f6'];
 
   return (
-    <div className="mt-4 h-[250px] w-full">
+    <div className="mt-4 h-[250px] w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={chartData}

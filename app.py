@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -6,6 +7,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from model.mert_model.predict_audio import AudioPredictor
 
@@ -41,6 +43,11 @@ sp_oauth = SpotifyOAuth(
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def normalize_string(s):
+    s = s.lower()
+    s = re.sub(r'[^\w\s]', '', s)
+    return s.strip()
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -102,20 +109,54 @@ def analyze_upload():
 @limiter.limit("10 per minute")
 def analyze_spotify():
     data = request.json
-    preview_url = data.get('preview_url')
-    track_id = data.get('track_id')
+    track_id = data.get('id')
+    preview_url = data.get('url')
+
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split(" ")[1] if auth_header else None
+
+    track_name, artist_name = None, None
+
+    if token and track_id:
+        try:
+            sp = spotipy.Spotify(auth=token)
+            track_info = sp.track(track_id)
+            track_name = track_info.get('name')
+            artist_name = track_info['artists'][0]['name']
+
+            if not preview_url:
+                preview_url = track_info.get('preview_url')
+        except Exception as e:
+            print(f"Spotify Detail Error: {e}")
+
+    if not preview_url and track_name and artist_name:
+        try:
+            print(f"Searching Deezer for: {artist_name} - {track_name}")
+            query = f"{normalize_string(artist_name)} {normalize_string(track_name)}"
+            deezer_res = requests.get(
+                "https://api.deezer.com/search",
+                params={'q': query},
+                timeout=5
+            ).json()
+
+            if deezer_res.get('data') and len(deezer_res['data']) > 0:
+                preview_url = deezer_res['data'][0].get('preview')
+                print(f"Found on Deezer: {preview_url}")
+        except Exception as e:
+            print(f"Deezer Fallback Error: {e}")
 
     if not preview_url:
-        return jsonify({"error": "No preview URL available for this track"}), 400
+        return jsonify({
+            "error": f"No audio preview available for '{track_name}' on Spotify and Deezer."
+        }), 400
 
     filename = f"spotify_{track_id}.mp3"
     filepath = os.path.join(UPLOAD_FOLDER, filename)
 
     try:
         doc = requests.get(preview_url, timeout=10)
-
         if doc.status_code != 200:
-            return jsonify({"error": "Could not download preview from Spotify (Invalid Status)"}), 400
+            return jsonify({"error": "Failed to download audio file."}), 400
 
         with open(filepath, 'wb') as f:
             f.write(doc.content)

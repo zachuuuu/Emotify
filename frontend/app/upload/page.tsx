@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import { analyzeFile } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmotionChart } from '@/components/emotion-chart';
-import { Upload, Loader2, Music, ChevronLeft } from 'lucide-react';
+import { Upload, Loader2, Music, ChevronLeft, FileAudio } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -16,16 +16,20 @@ interface Emotion {
 
 export default function UploadPage() {
   const [results, setResults] = useState<Emotion[] | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const { mutate, isPending } = useMutation({
     mutationFn: analyzeFile,
     onSuccess: (data) => setResults(data),
-    onError: () => alert('Błąd analizy pliku.'),
+    onError: () => alert('File analysis error.'),
   });
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) mutate(file);
+    if (file) {
+      setFileName(file.name);
+      mutate(file);
+    }
   };
 
   return (
@@ -62,13 +66,25 @@ export default function UploadPage() {
             )}
           >
             <div className="rounded-full bg-sky-50 p-4 text-sky-500">
-              {isPending ? <Loader2 className="h-8 w-8 animate-spin" /> : <Upload size={32} />}
+              {isPending ? (
+                <Loader2 className="h-8 w-8 animate-spin" />
+              ) : fileName ? (
+                <FileAudio size={32} />
+              ) : (
+                <Upload size={32} />
+              )}
             </div>
             <div className="space-y-1">
               <p className="font-bold text-slate-700">
-                {isPending ? 'Analizowanie utworu...' : 'Kliknij, aby przesłać'}
+                {isPending
+                  ? 'Analizowanie utworu...'
+                  : fileName
+                    ? 'Wybrano plik'
+                    : 'Kliknij, aby przesłać'}
               </p>
-              <p className="text-xs text-slate-400">MP3 lub WAV (max 16MB)</p>
+              <p className="mx-auto max-w-[200px] truncate text-xs text-slate-400">
+                {fileName ? fileName : 'MP3 lub WAV (max 16MB)'}
+              </p>
             </div>
           </label>
         </CardContent>
@@ -76,14 +92,14 @@ export default function UploadPage() {
 
       {results && (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="overflow-hidden border-none bg-white shadow-xl">
+          <Card className="gap-0 overflow-hidden border-none bg-white p-0 shadow-xl">
             <div className="border-b border-sky-100 bg-sky-50 p-4">
               <h3 className="flex items-center gap-2 text-sm font-bold text-sky-800">
                 <Music size={16} /> Wynik analizy
               </h3>
             </div>
             <CardContent className="p-6">
-              <div className="mb-6">
+              <div className="mb-6 flex flex-col items-center">
                 <span className="mb-2 inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-bold tracking-wider text-sky-700 uppercase">
                   Dominująca: {results[0]?.tag}
                 </span>

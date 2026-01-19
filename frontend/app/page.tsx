@@ -1,14 +1,16 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { Music, Upload, History, User } from 'lucide-react';
+import { Music, Upload, User } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="mx-auto max-w-md space-y-6 p-6">
-      <header className="py-4">
-        <h2 className="text-3xl font-bold text-slate-800">Odkryj emocje ukryte w Twojej muzyce</h2>
+      <header className="py-4 text-center">
+        <h2 className="text-3xl font-bold text-balance text-slate-800">
+          Odkryj emocje ukryte w Twojej muzyce
+        </h2>
       </header>
 
       <div className="grid grid-cols-1 gap-4">
@@ -19,7 +21,7 @@ export default function Home() {
                 <Music size={24} />
               </div>
               <div>
-                <h3 className="font-bold">Spotify Analysis</h3>
+                <h3 className="font-bold">Analiza Spotify</h3>
                 <p className="text-xs opacity-80">Analizuj ostatnio słuchane utwory</p>
               </div>
             </CardContent>
@@ -34,7 +36,7 @@ export default function Home() {
               </div>
               <div>
                 <h3 className="font-bold">Prześlij plik</h3>
-                <p className="text-xs opacity-80">Analiza pojedynczego utworu MP3</p>
+                <p className="text-xs opacity-80">Analiza pojedynczego utworu</p>
               </div>
             </CardContent>
           </Card>

@@ -14,8 +14,8 @@ export default function SpotifyPage() {
   const [tracks, setTracks] = useState<any[]>([]);
   const [results, setResults] = useState<any | null>(null);
 
-  const [activeTrackId, setActiveTrackId] = useState<string | null>(null);
-  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [analyzingIndex, setAnalyzingIndex] = useState<number | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -62,26 +62,26 @@ export default function SpotifyPage() {
     mutationFn: (trackId: string) => analyzeSpotify(trackId),
     onSuccess: (data) => {
       setResults(data);
-      setAnalyzingId(null);
+      setAnalyzingIndex(null);
     },
     onError: (error: any) => {
       const errorMsg = error.response?.data?.error || 'Track analysis error.';
       alert(errorMsg);
-      setAnalyzingId(null);
-      setActiveTrackId(null);
+      setAnalyzingIndex(null);
+      setActiveIndex(null);
     },
   });
 
-  const handleAnalyze = (track: any) => {
-    if (activeTrackId === track.id) {
-      setActiveTrackId(null);
+  const handleAnalyze = (track: any, index: number) => {
+    if (activeIndex === index) {
+      setActiveIndex(null);
       setResults(null);
       return;
     }
 
     setResults(null);
-    setActiveTrackId(track.id);
-    setAnalyzingId(track.id);
+    setActiveIndex(index);
+    setAnalyzingIndex(index);
     analyze(track.id);
   };
 
@@ -158,7 +158,8 @@ export default function SpotifyPage() {
       ) : (
         <div className="space-y-3">
           {tracks.map((item: any, index: number) => {
-            const isSelected = activeTrackId === item.track.id;
+            const isSelected = activeIndex === index;
+            const isAnalyzing = analyzingIndex === index;
 
             return (
               <div key={`${item.track.id}-${index}`} className="flex flex-col gap-2">
@@ -191,8 +192,8 @@ export default function SpotifyPage() {
                       </div>
                     </div>
                     <Button
-                      onClick={() => handleAnalyze(item.track)}
-                      disabled={analyzingId === item.track.id}
+                      onClick={() => handleAnalyze(item.track, index)}
+                      disabled={isAnalyzing}
                       size="sm"
                       variant={isSelected ? 'default' : 'secondary'}
                       className={cn(
@@ -202,7 +203,7 @@ export default function SpotifyPage() {
                           : 'bg-slate-100 text-slate-600 hover:bg-emerald-100 hover:text-emerald-600'
                       )}
                     >
-                      {analyzingId === item.track.id ? (
+                      {isAnalyzing ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : isSelected ? (
                         'Ukryj'

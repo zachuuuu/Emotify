@@ -3,19 +3,40 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getLoginUrl } from '@/lib/api';
+import { getLoginUrl, getUserProfile } from '@/lib/api';
 import { User, Music, ChevronLeft, LogOut, ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
+interface UserData {
+  display_name: string;
+  email: string;
+  images: { url: string }[];
+  product: string;
+}
+
 export default function AccountPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('spotify_token');
-    setIsLoggedIn(!!token);
-    setIsLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('spotify_token');
+
+      if (token) {
+        setIsLoggedIn(true);
+        try {
+          const data = await getUserProfile();
+          setUserData(data);
+        } catch (error) {
+          console.error('Error fetching profile (token might be expired)', error);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const handleConnectSpotify = async () => {
@@ -33,6 +54,7 @@ export default function AccountPage() {
   const handleLogout = () => {
     localStorage.removeItem('spotify_token');
     setIsLoggedIn(false);
+    setUserData(null);
   };
 
   return (
@@ -50,32 +72,56 @@ export default function AccountPage() {
       </header>
 
       <Card className="border-none bg-white shadow-xl shadow-slate-200/50">
-        <CardContent className="space-y-8 px-6 pt-6 pb-2">
+        <CardContent className="space-y-6 p-6">
           <div className="flex items-center gap-4">
             <div
               className={cn(
-                'flex h-16 w-16 items-center justify-center rounded-full border transition-colors',
+                'relative flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border transition-colors',
                 isLoggedIn
                   ? 'border-emerald-100 bg-emerald-50 text-emerald-500'
                   : 'border-slate-100 bg-slate-50 text-slate-400'
               )}
             >
-              <User size={32} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-slate-800">Użytkownik</h3>
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Sprawdzanie...
-                </div>
-              ) : isLoggedIn ? (
-                <p className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
-                  Sesja aktywna
-                </p>
+              {userData?.images?.[0]?.url ? (
+                <img
+                  src={userData.images[0].url}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
               ) : (
-                <p className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                  Niepołączony
-                </p>
+                <User size={32} />
+              )}
+            </div>
+
+            <div>
+              {isLoading ? (
+                <div className="space-y-2">
+                  <div className="h-5 w-32 animate-pulse rounded bg-slate-200"></div>
+                  <div className="h-3 w-20 animate-pulse rounded bg-slate-200"></div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="text-lg font-bold text-slate-800">
+                    {userData?.display_name || 'Użytkownik'}
+                  </h3>
+
+                  {isLoggedIn ? (
+                    <div className="flex items-center gap-2">
+                      <p className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
+                        Sesja aktywna
+                      </p>
+                      {userData?.product === 'premium' && (
+                        <span className="text-[10px] font-bold tracking-wide text-amber-500 uppercase">
+                          PREMIUM
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                      Niepołączony
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -116,7 +162,7 @@ export default function AccountPage() {
           </div>
 
           {isLoggedIn && (
-            <div className="animate-in fade-in slide-in-from-top-2">
+            <div className="animate-in fade-in slide-in-from-top-2 border-t border-slate-50 pt-4">
               <Button
                 onClick={handleLogout}
                 variant="destructive"
